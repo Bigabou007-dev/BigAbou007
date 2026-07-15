@@ -1,0 +1,8 @@
+.env
+server-data/cache/
+server-data/db/
+server-data/txData/
+server-data/resources/oxmysql/
+server-data/resources/ox_lib/
+server-data/resources/qbx_core/
+*.log
