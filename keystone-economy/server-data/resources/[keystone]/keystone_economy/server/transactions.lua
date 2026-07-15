@@ -24,32 +24,30 @@ function Keystone.Transactions.trade(src, commodityId, qty, side)
   local gross = unit * qty
   local tax = math.floor(gross * Keystone.Config.sinks.salesTaxPct + 0.5)
 
-  -- 3. Framework adapter checks: does the player have the money / items?
-  --    (Stubbed — wired to Qbox/ox in server/adapters/. Fail closed.)
+  -- 3. Framework adapter moves all money/items server-side. Fail closed.
   local adapter = Keystone.Adapter
+  if not adapter then return false, 'adapter_unavailable' end
+
   if side == 'buy' then
     local cost = gross
-    if not (adapter and adapter.canAfford and adapter.canAfford(src, cost)) then
-      return false, 'insufficient_funds'
+    -- Pre-checks BEFORE mutating anything (cheap, avoids refund churn).
+    if not adapter.canAfford(src, cost) then return false, 'insufficient_funds' end
+    if adapter.canCarry and not adapter.canCarry(src, commodityId, qty) then
+      return false, 'cannot_carry'
     end
-    if not (adapter and adapter.giveItem and adapter.takeMoney) then
-      return false, 'adapter_unavailable'
-    end
-    -- 4. Atomic mutation: money out, item in, state updated. Order matters:
-    --    take money first; if giveItem fails, refund.
+    -- 4. Atomic mutation: money out, item in. If the item grant fails, refund
+    --    the money — so we can never create or destroy value (no dupe, no loss).
     if not adapter.takeMoney(src, cost) then return false, 'take_money_failed' end
     if not adapter.giveItem(src, commodityId, qty) then
-      adapter.giveMoney(src, cost) -- refund; no dupe, no loss
+      adapter.giveMoney(src, cost) -- refund
       return false, 'give_item_failed'
     end
   else -- sell
-    if not (adapter and adapter.hasItem and adapter.hasItem(src, commodityId, qty)) then
-      return false, 'insufficient_items'
-    end
+    if not adapter.hasItem(src, commodityId, qty) then return false, 'insufficient_items' end
     if not adapter.takeItem(src, commodityId, qty) then return false, 'take_item_failed' end
     local payout = gross - tax
     if not adapter.giveMoney(src, payout) then
-      adapter.giveItem(src, commodityId, qty) -- refund the item; no loss
+      adapter.giveItem(src, commodityId, qty) -- refund the item
       return false, 'give_money_failed'
     end
   end

@@ -6,6 +6,15 @@ AddEventHandler('onResourceStart', function(res)
 
   Keystone.State.load()
 
+  -- Resolve which framework moves money/items. Without one, trades fail closed.
+  local active = Keystone.resolveAdapter()
+  if active then
+    print('[keystone] framework adapter: ' .. active)
+  else
+    print('[keystone] WARNING: no adapter active — trades will fail. '
+      .. "Install qbx_core, or set Config.framework = 'mock' for dev/load-test.")
+  end
+
   -- Batched persistence loop — the reason we don't write per-transaction.
   CreateThread(function()
     while true do

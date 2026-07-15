@@ -1,6 +1,13 @@
 Keystone = Keystone or {}
 
 Keystone.Config = {
+  -- Framework adapter: 'auto' detects a running framework, else falls back to
+  -- the in-memory mock (for load-testing on a bare VPS with no framework).
+  -- Force one with: 'qbox' | 'esx' | 'qbcore' | 'mock'.
+  framework = 'auto',
+  allowMockFallback = true,
+  mock = { startingCash = 100000 },
+
   -- Persistence: how often (ms) to flush the in-memory hot state to MariaDB.
   -- The whole point is to NOT write per-tick. Batch + debounce.
   flushIntervalMs = 5000,

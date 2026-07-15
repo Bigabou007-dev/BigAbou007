@@ -16,6 +16,9 @@ shared_scripts {
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
   'server/state.lua',
+  'server/adapters/interface.lua',
+  'server/adapters/mock.lua',
+  'server/adapters/qbox.lua',
   'server/persistence.lua',
   'server/transactions.lua',
   'server/main.lua',
